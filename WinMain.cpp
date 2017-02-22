@@ -12,11 +12,18 @@ WinMain::WinMain(QWidget *parent) :
 {
 	ui->setupUi(this);
 
+	// Load configs.
 	settings = new SettingsInterface("C:\\Users\\Michael\\Desktop\\mods.json");
 	openMWConfig = new OpenMWConfigInterface("C:\\Users\\Michael\\Documents\\My Games\\OpenMW\\openmw.cfg");
 
+	// Set up mod view.
 	ui->tvMain->setModel(new TreeModModel(settings));
 	ui->tvMain->header()->setContextMenuPolicy(Qt::CustomContextMenu);
+	ui->tvMain->header()->setSectionsMovable(false);
+
+	// Resize columns to fit.
+	for (int column = 0; column < ui->tvMain->header()->count(); column++)
+		ui->tvMain->resizeColumnToContents(column);
 
 	// Complicated signals/slots
 	connect(ui->tvMain, SIGNAL(customContextMenuRequested(QPoint)),
@@ -75,32 +82,24 @@ void WinMain::actContextMenuDataTreeHeader(const QPoint& pos)
 	QHeaderView* header = ui->tvMain->header();
 	QMenu menu(this);
 
-	QMenu* menuHeaders = menu.addMenu("Headers");
+	//QMenu* menuHeaders = menu.addMenu("Headers");
 	for (int column = 0; column < header->count(); column++)
 	{
-		QAction* action = menuHeaders->addAction(ui->tvMain->model()->headerData(column, Qt::Horizontal).toString());
+		QAction* action = menu.addAction(ui->tvMain->model()->headerData(column, Qt::Horizontal).toString());
 		action->setData(column);
 		action->setCheckable(true);
 		action->setChecked(!ui->tvMain->header()->isSectionHidden(column));
 	}
-	connect(menuHeaders, SIGNAL(triggered(QAction*)), this, SLOT(actContextMenuDataTreeHeaderTriggered(QAction*)));
-
-	menu.addSeparator();
-	QAction* actContextMenuDataTreeHeaderSortBy = menu.addAction("Sort by");
-	connect(actContextMenuDataTreeHeaderSortBy, SIGNAL(triggered(bool)), this, SLOT(actContextMenuDataTreeHeaderSortBy(bool)));
+	connect(&menu, SIGNAL(triggered(QAction*)),
+			this, SLOT(actContextMenuDataTreeHeaderTriggered(QAction*)));
 
 	menu.exec(ui->tvMain->header()->viewport()->mapToGlobal(pos));
 }
 
 void WinMain::actContextMenuDataTreeHeaderTriggered(QAction* action)
 {
-	int index = action->data().toInt();
-	ui->tvMain->header()->setSectionHidden(index, !ui->tvMain->header()->isSectionHidden(index));
-}
-
-void WinMain::actContextMenuDataTreeHeaderSortBy(bool checked)
-{
-	qDebug("IT'S SORTING TIME");
+	int column = action->data().toInt();
+	ui->tvMain->header()->setSectionHidden(column, !ui->tvMain->header()->isSectionHidden(column));
 }
 
 void WinMain::dragEnterEvent(QDragEnterEvent* event)
@@ -160,24 +159,45 @@ void WinMain::addNewData(QAbstractItemModel* model, const QModelIndex& parent, i
 	for (int column = 0; column < model->columnCount(parent); ++column) {
 		QModelIndex child = model->index(position, column, parent);
 		if ( column == TreeModItem::COLUMN_INDEX )
-		{
 			model->setData(child, position, Qt::EditRole);
-		}
 		else if ( column == TreeModItem::COLUMN_NAME )
-		{
 			model->setData(child, target.baseName(), Qt::EditRole);
-		}
 		else if ( column == TreeModItem::COLUMN_FOLDER )
-		{
 			model->setData(child, target.absoluteFilePath(), Qt::EditRole);
-		}
 		else if ( column == TreeModItem::COLUMN_ENABLED )
-		{
 			model->setData(child, true, Qt::EditRole);
-		}
 		else
-		{
 			model->setData(child, QVariant("[No data]"), Qt::EditRole);
+	}
+
+	// Look for valid sub-elements.
+	QDirIterator it(target.absoluteFilePath(), QDir::AllDirs);
+	while (it.hasNext())
+	{
+		QFileInfo subFolder = it.next();
+		bool converted = false;
+		QVariant firstToken = subFolder.baseName().split(" ").at(0);
+		int firstTokenAsInt = firstToken.toString().toInt(&converted);
+		if (converted)
+		{
+			QModelIndex newParent = model->index(position, 0, parent);
+			if (!model->insertRow(model->rowCount(newParent), newParent))
+				return;
+			for (int column = 0; column < model->columnCount(parent); ++column) {
+				QModelIndex child = model->index(model->rowCount(newParent)-1, column, newParent);
+				if ( column == TreeModItem::COLUMN_INDEX )
+					model->setData(child, firstTokenAsInt, Qt::EditRole);
+				else if ( column == TreeModItem::COLUMN_NAME )
+					model->setData(child, subFolder.baseName().right(subFolder.baseName().length() - firstToken.toString().length() - 1), Qt::EditRole);
+				else if ( column == TreeModItem::COLUMN_FOLDER )
+					model->setData(child, subFolder.absoluteFilePath(), Qt::EditRole);
+				else if ( column == TreeModItem::COLUMN_ENABLED )
+					model->setData(child, true, Qt::EditRole);
+				else
+					model->setData(child, QVariant("[No data]"), Qt::EditRole);
+			}
 		}
 	}
+
+	ui->tvMain->expand(ui->tvMain->model()->index(position, 0, parent));
 }

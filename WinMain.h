@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QContextMenuEvent>
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QMimeData>
 #include <QTextCodec>
@@ -33,7 +34,6 @@ public slots:
 	void actContextMenuDataTreeHeader(const QPoint& pos);
 
 	void actContextMenuDataTreeHeaderTriggered(QAction* action);
-	void actContextMenuDataTreeHeaderSortBy(bool checked = false);
 
 protected:
 	void dragEnterEvent(QDragEnterEvent* event) Q_DECL_OVERRIDE;
