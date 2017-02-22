@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WinMain</class>
+ <widget class="QMainWindow" name="WinMain">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>678</width>
+    <height>513</height>
+   </rect>
+  </property>
+  <property name="acceptDrops">
+   <bool>true</bool>
+  </property>
+  <property name="windowTitle">
+   <string>OpenMW Mod Manager</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QTreeView" name="tvMain">
+      <property name="contextMenuPolicy">
+       <enum>Qt::CustomContextMenu</enum>
+      </property>
+      <property name="acceptDrops">
+       <bool>true</bool>
+      </property>
+      <property name="dragEnabled">
+       <bool>true</bool>
+      </property>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::InternalMove</enum>
+      </property>
+      <property name="defaultDropAction">
+       <enum>Qt::MoveAction</enum>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="indentation">
+       <number>15</number>
+      </property>
+      <property name="animated">
+       <bool>true</bool>
+      </property>
+      <property name="allColumnsShowFocus">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>678</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuContent">
+    <property name="title">
+     <string>Content</string>
+    </property>
+    <addaction name="actionAddData"/>
+    <addaction name="actionDeleteData"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuContent"/>
+  </widget>
+  <action name="actionAddData">
+   <property name="text">
+    <string>Add Data</string>
+   </property>
+  </action>
+  <action name="actionDeleteData">
+   <property name="text">
+    <string>Delete Data</string>
+   </property>
+  </action>
+  <action name="actionAddChildData">
+   <property name="text">
+    <string>Add Child Data</string>
+   </property>
+   <property name="toolTip">
+    <string>Insert a child data point</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>actionAddData</sender>
+   <signal>triggered()</signal>
+   <receiver>WinMain</receiver>
+   <slot>actAddData()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>338</x>
+     <y>256</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionDeleteData</sender>
+   <signal>triggered()</signal>
+   <receiver>WinMain</receiver>
+   <slot>actDeleteData()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>338</x>
+     <y>256</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionAddChildData</sender>
+   <signal>triggered()</signal>
+   <receiver>WinMain</receiver>
+   <slot>actAddChildData()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>338</x>
+     <y>256</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>actAddData()</slot>
+  <slot>actDeleteData()</slot>
+  <slot>actAddChildData()</slot>
+  <slot>actContextMenuDataTree()</slot>
+ </slots>
+</ui>
