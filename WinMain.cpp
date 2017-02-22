@@ -16,10 +16,13 @@ WinMain::WinMain(QWidget *parent) :
 	openMWConfig = new OpenMWConfigInterface("C:\\Users\\Michael\\Documents\\My Games\\OpenMW\\openmw.cfg");
 
 	ui->tvMain->setModel(new TreeModModel(settings));
+	ui->tvMain->header()->setContextMenuPolicy(Qt::CustomContextMenu);
 
 	// Complicated signals/slots
 	connect(ui->tvMain, SIGNAL(customContextMenuRequested(QPoint)),
 			this, SLOT(actContextMenuDataTree(QPoint)));
+	connect(ui->tvMain->header(), SIGNAL(customContextMenuRequested(QPoint)),
+			this, SLOT(actContextMenuDataTreeHeader(QPoint)));
 }
 
 WinMain::~WinMain()
@@ -63,8 +66,41 @@ void WinMain::actContextMenuDataTree(const QPoint& pos)
 	QMenu menu(this);
 	menu.addAction(ui->actionAddData);
 	menu.addAction(ui->actionDeleteData);
-	menu.addAction(ui->actionAddChildData);
+//	menu.addAction(ui->actionAddChildData);
 	menu.exec(ui->tvMain->viewport()->mapToGlobal(pos));
+}
+
+void WinMain::actContextMenuDataTreeHeader(const QPoint& pos)
+{
+	QHeaderView* header = ui->tvMain->header();
+	QMenu menu(this);
+
+	QMenu* menuHeaders = menu.addMenu("Headers");
+	for (int column = 0; column < header->count(); column++)
+	{
+		QAction* action = menuHeaders->addAction(ui->tvMain->model()->headerData(column, Qt::Horizontal).toString());
+		action->setData(column);
+		action->setCheckable(true);
+		action->setChecked(!ui->tvMain->header()->isSectionHidden(column));
+	}
+	connect(menuHeaders, SIGNAL(triggered(QAction*)), this, SLOT(actContextMenuDataTreeHeaderTriggered(QAction*)));
+
+	menu.addSeparator();
+	QAction* actContextMenuDataTreeHeaderSortBy = menu.addAction("Sort by");
+	connect(actContextMenuDataTreeHeaderSortBy, SIGNAL(triggered(bool)), this, SLOT(actContextMenuDataTreeHeaderSortBy(bool)));
+
+	menu.exec(ui->tvMain->header()->viewport()->mapToGlobal(pos));
+}
+
+void WinMain::actContextMenuDataTreeHeaderTriggered(QAction* action)
+{
+	int index = action->data().toInt();
+	ui->tvMain->header()->setSectionHidden(index, !ui->tvMain->header()->isSectionHidden(index));
+}
+
+void WinMain::actContextMenuDataTreeHeaderSortBy(bool checked)
+{
+	qDebug("IT'S SORTING TIME");
 }
 
 void WinMain::dragEnterEvent(QDragEnterEvent* event)

@@ -171,9 +171,7 @@ bool TreeModModel::removeRows(int position, int rows, const QModelIndex &parent)
 
 int TreeModModel::rowCount(const QModelIndex &parent) const
 {
-	TreeModItem *parentItem = getItem(parent);
-
-	return parentItem->childCount();
+	return getItem(parent)->childCount();
 }
 
 bool TreeModModel::setData(const QModelIndex &index, const QVariant &value, int role)

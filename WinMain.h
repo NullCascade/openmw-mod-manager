@@ -30,6 +30,10 @@ public slots:
 	void actAddChildData();
 	void actDeleteData();
 	void actContextMenuDataTree(const QPoint& pos);
+	void actContextMenuDataTreeHeader(const QPoint& pos);
+
+	void actContextMenuDataTreeHeaderTriggered(QAction* action);
+	void actContextMenuDataTreeHeaderSortBy(bool checked = false);
 
 protected:
 	void dragEnterEvent(QDragEnterEvent* event) Q_DECL_OVERRIDE;
