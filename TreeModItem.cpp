@@ -161,3 +161,14 @@ void TreeModItem::serialize(QDataStream& stream)
 		this->child(child)->serialize(stream);
 	}
 }
+
+void TreeModItem::serialize(QVector<QVariant>& dataVect)
+{
+	if (data(COLUMN_ENABLED).toBool())
+	{
+		if (parentItem)
+			dataVect.push_back(data(COLUMN_FOLDER));
+		foreach (TreeModItem* child, childItems)
+			child->serialize(dataVect);
+	}
+}

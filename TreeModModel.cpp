@@ -2,10 +2,11 @@
 
 #include <QtWidgets>
 
-TreeModModel::TreeModModel(SettingsInterface* settingsInterface, QObject *parent)
+TreeModModel::TreeModModel(SettingsInterface* settingsInterface, OpenMWConfigInterface* configInterface, QObject *parent)
 	: QAbstractItemModel(parent)
 {
 	settings = settingsInterface;
+	config = configInterface;
 
 	QVector<QVariant> rootData;
 	rootData << tr("Index") << tr("Mod") << tr("Folder") << tr("Enabled");
@@ -18,6 +19,7 @@ TreeModModel::TreeModModel(SettingsInterface* settingsInterface, QObject *parent
 TreeModModel::~TreeModModel()
 {
 	saveDataToJson();
+	saveDataToConfig();
 	delete rootItem;
 }
 
@@ -237,6 +239,13 @@ void TreeModModel::loadDataFromJson()
 void TreeModModel::saveDataToJson()
 {
 	settings->setModJson(rootItem);
+}
+
+void TreeModModel::saveDataToConfig()
+{
+	QVector<QVariant>& dataVect = config->getByKey("data");
+	dataVect.clear();
+	rootItem->serialize(dataVect);
 }
 
 void TreeModModel::recalculateIndexes(TreeModItem* parent, int startAt)

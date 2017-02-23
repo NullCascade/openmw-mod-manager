@@ -28,6 +28,7 @@ public:
 	QJsonArray getChildrenAsJsonArray();
 	QJsonValue toJsonObject();
 	void serialize(QDataStream& stream);
+	void serialize(QVector<QVariant>& dataVect);
 
 	enum Columns {
 		COLUMN_INDEX,

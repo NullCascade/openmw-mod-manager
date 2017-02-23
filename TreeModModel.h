@@ -5,13 +5,14 @@
 #include <QAbstractItemModel>
 #include <QJsonDocument>
 
+#include "OpenMWConfigInterface.h"
 #include "SettingsInterface.h"
 #include "TreeModItem.h"
 
 class TreeModModel : public QAbstractItemModel
 {
 public:
-	TreeModModel(SettingsInterface* settingsInterface, QObject *parent = 0);
+	TreeModModel(SettingsInterface* settingsInterface, OpenMWConfigInterface* configInterface, QObject *parent = 0);
 	~TreeModModel();
 
 	// Basic data
@@ -48,6 +49,7 @@ private:
 	void addMods(const QJsonArray& modsArray, TreeModItem* parent);
 	void loadDataFromJson();
 	void saveDataToJson();
+	void saveDataToConfig();
 
 	void recalculateIndexes(TreeModItem* parent, int startAt = 0);
 
@@ -55,6 +57,7 @@ private:
 	TreeModItem *rootItem;
 
 	SettingsInterface* settings;
+	OpenMWConfigInterface* config;
 };
 
 #endif // TREEMODMODEL_H

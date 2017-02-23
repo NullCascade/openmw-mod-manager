@@ -17,7 +17,7 @@ WinMain::WinMain(QWidget *parent) :
 	openMWConfig = new OpenMWConfigInterface("C:\\Users\\Michael\\Documents\\My Games\\OpenMW\\openmw.cfg");
 
 	// Set up mod view.
-	ui->tvMain->setModel(new TreeModModel(settings));
+	ui->tvMain->setModel(new TreeModModel(settings, openMWConfig));
 	ui->tvMain->header()->setContextMenuPolicy(Qt::CustomContextMenu);
 	ui->tvMain->header()->setSectionsMovable(false);
 
