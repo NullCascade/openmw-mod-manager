@@ -100,11 +100,10 @@ QVariant TreeModModel::headerData(int section, Qt::Orientation orientation, int 
 
 QModelIndex TreeModModel::index(int row, int column, const QModelIndex &parent) const
 {
-	if (parent.isValid() && parent.column() != 0)
+	if (!hasIndex(row, column, parent))
 		return QModelIndex();
 
 	TreeModItem *parentItem = getItem(parent);
-
 	TreeModItem *childItem = parentItem->child(row);
 	if (childItem)
 		return createIndex(row, column, childItem);
@@ -152,6 +151,14 @@ QModelIndex TreeModModel::parent(const QModelIndex &index) const
 	return createIndex(parentItem->childNumber(), 0, parentItem);
 }
 
+QModelIndex TreeModModel::getIndexForFolder(const QString& folder)
+{
+	QModelIndexList matches = this->match(this->index(0, TreeModItem::COLUMN_FOLDER), Qt::DisplayRole, QVariant::fromValue(folder), 1, Qt::MatchCaseSensitive | Qt::MatchRecursive);
+	if (matches.count() > 0)
+		return matches.first();
+	return QModelIndex();
+}
+
 bool TreeModModel::removeColumns(int position, int columns, const QModelIndex &parent)
 {
 	bool success;
@@ -170,6 +177,32 @@ bool TreeModModel::removeRows(int position, int rows, const QModelIndex &parent)
 {
 	TreeModItem* parentItem = getItem(parent);
 	bool success = true;
+
+	for (int r = 0; r < rows; r++)
+	{
+		QString folder = parent.child(position+r, TreeModItem::COLUMN_FOLDER).data().toString();
+		foreach(const QString& key, folderConflicts.keys())
+		{
+			if (folderConflicts[key].contains(folder))
+				folderConflicts.remove(folder);
+			if (folderConflicts[key].isEmpty())
+				folderConflicts.remove(key);
+		}
+	}
+//	if (index.column() == TreeModItem::COLUMN_FOLDER)
+//	{
+//		QString oldFolder = parent.child(row)
+//		QString newFolder = value.toString();
+
+//		// Remove all references to the old folder.
+//		foreach(const QString& key, folderConflicts)
+//		{
+//			if (folderConflicts[key].contains(oldFolder))
+//				folderConflicts.remove(oldFolder);
+//			if (folderConflicts[key].isEmpty())
+//				folderConflicts.remove(key);
+//		}
+//	}
 
 	beginRemoveRows(parent, position, position + rows - 1);
 	success = parentItem->removeChildren(position, rows);
@@ -199,7 +232,39 @@ bool TreeModModel::setData(const QModelIndex &index, const QVariant &value, int 
 	if (role != Qt::EditRole)
 		return false;
 
-	bool result = getItem(index)->setData(index.column(), value);
+	if (index.column() == TreeModItem::COLUMN_FOLDER)
+	{
+		QString oldFolder = index.data().toString();
+		QString newFolder = value.toString();
+
+		// Remove all references to the old folder.
+		foreach(const QString& key, folderConflicts.keys())
+		{
+			if (folderConflicts[key].contains(oldFolder))
+				folderConflicts.remove(oldFolder);
+			if (folderConflicts[key].isEmpty())
+				folderConflicts.remove(key);
+		}
+
+		// Go through all files and add them to the conflict map.
+		if (QDir(newFolder).exists())
+		{
+			QDirIterator it(newFolder, QStringList(), QDir::Files, QDirIterator::Subdirectories);
+			while (it.hasNext())
+			{
+				QString foundPath = it.next();
+				QString relativePath = foundPath.right(foundPath.length() - newFolder.length() - 1);
+				folderConflicts[relativePath].push_back(newFolder);
+			}
+		}
+	}
+
+	bool result = false;
+	if (index.column() == TreeModItem::COLUMN_INDEX)
+		result = getItem(index)->setData(index.column(), index.row());
+	else
+		result = getItem(index)->setData(index.column(), value);
+
 	if (result)
 		emit dataChanged(index, index);
 
@@ -218,27 +283,27 @@ bool TreeModModel::setHeaderData(int section, Qt::Orientation orientation, const
 	return result;
 }
 
-void TreeModModel::addMods(const QJsonArray& modsArray, TreeModItem* parent)
+void TreeModModel::addMods(const QJsonArray& modsArray, QModelIndex& parent)
 {
 	foreach( QJsonValue mod, modsArray )
 	{
 		QJsonObject modTable = mod.toObject();
 
 		QVector<QVariant> data;
-		data << parent->childCount() << modTable["name"].toString() << modTable["folder"].toString() << modTable["enabled"].toBool();
+		data << 0 << modTable["name"].toString() << modTable["folder"].toString() << modTable["enabled"].toBool();
 
-		parent->insertChildren(parent->childCount(), 1, rootItem->columnCount());
-		TreeModItem* item = parent->child(parent->childCount()-1);
+		int newRow = this->rowCount(parent);
+		this->insertRow(newRow, parent);
 		for (int column = 0; column < data.size(); column++)
 		{
-			item->setData(column, data[column]);
+			this->setData(this->index(newRow, column, parent), data[column]);
 		}
 
 		QJsonValue subModsV = modTable["mods"];
 		if (!subModsV.isUndefined())
 		{
 			QJsonArray subModsArray = subModsV.toArray();
-			addMods(subModsArray, item);
+			addMods(subModsArray, this->index(newRow, 0, parent));
 		}
 	}
 }
@@ -246,7 +311,7 @@ void TreeModModel::addMods(const QJsonArray& modsArray, TreeModItem* parent)
 void TreeModModel::loadDataFromJson()
 {
 	QJsonArray modsArray = settings->getJsonDoc().object()["mods"].toArray();
-	addMods(modsArray, rootItem);
+	addMods(modsArray, QModelIndex());
 }
 
 void TreeModModel::saveDataToJson()
@@ -368,69 +433,7 @@ Qt::DropActions TreeModModel::supportedDropActions() const
 	return Qt::MoveAction;
 }
 
-void TreeModModel::addConflictsForIndex(const QModelIndex& index, const QString& dir)
-{
-	if (!index.isValid())
-	{
-		qDebug() << "Invalid conflict parameters.";
-		return;
-	}
-
-	if (index.column() != TreeModItem::COLUMN_FOLDER)
-	{
-		qDebug() << "Invalid conflict column.";
-		return;
-	}
-
-	// Ignore conflict if this is selected or is a child of the selected.
-	if (!currentSelection.empty())
-	{
-		QModelIndex selectedIndex = currentSelection.indexes().at(TreeModItem::COLUMN_FOLDER);
-		if (selectedIndex == index || selectedIndex == index.parent().sibling(index.parent().row(), TreeModItem::COLUMN_FOLDER))
-			return;
-	}
-
-	// Children highlighting is handled differently.
-	if (this->rowCount(index) > 0)
-	{
-		int previousConflictCount = currentConflicts.size();
-		for (int r = 0; r < this->rowCount(index); r++)
-		{
-			//! TODO: Why is `index.child(r)` returning an invalid QModelIndex? Figure it out. Working around here.
-			addConflictsForIndex(createIndex(r, TreeModItem::COLUMN_FOLDER, getItem(index)->child(r)), dir);
-		}
-
-		if (currentConflicts.size() > previousConflictCount)
-		{
-			currentConflicts.push_back(index.sibling(index.row(), 0));
-			this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT));
-		}
-		return;
-	}
-
-	// If we don't have children, manually check the directory.
-	QString thisDir = index.data().toString();
-	if (!QDir(thisDir).exists())
-	{
-		qDebug() << "Warning: Folder '" + thisDir + "' does not exist.";
-		return;
-	}
-
-	QDirIterator it(thisDir, QStringList(), QDir::Files, QDirIterator::Subdirectories);
-	while (it.hasNext())
-	{
-		QString foundPath = it.next();
-		QFileInfo relativeFile = dir + "/" + foundPath.right(foundPath.length() - thisDir.length() - 1);
-		if (relativeFile.exists())
-		{
-			currentConflicts.push_back(index.sibling(index.row(), 0));
-			this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT));
-			break;
-		}
-	}
-}
-
-//! TODO: For the love of God, optimize this.
+//! TODO: Optimize this.
 void TreeModModel::updateConflictSelection(const QItemSelection& selected, const QItemSelection& deselected)
 {
 	Q_UNUSED(deselected);
@@ -443,7 +446,7 @@ void TreeModModel::updateConflictSelection(const QItemSelection& selected, const
 	QModelIndexList selectionCopy = currentConflicts;
 	currentConflicts.clear();
 	foreach(const QModelIndex& index, selectionCopy)
-		this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT));
+		this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT), QVector<int>() << Qt::TextColorRole);
 
 	// We don't care what happens if the selection is empty.
 	if (selected.empty())
@@ -467,9 +470,33 @@ void TreeModModel::updateConflictSelection(const QItemSelection& selected, const
 		return;
 	}
 
-	// Slow and dirty: search all sub files of other indexes and highlight conflicts.
-	for (int r = 0; r < this->rowCount(); r++)
+	QDirIterator it(baseFolder, QStringList(), QDir::Files, QDirIterator::Subdirectories);
+	while (it.hasNext())
 	{
-		addConflictsForIndex(this->index(r, TreeModItem::COLUMN_FOLDER), baseFolder);
+		QString foundPath = it.next();
+		QString relativePath = foundPath.right(foundPath.length() - baseFolder.length() - 1);
+		if (folderConflicts.contains(relativePath) && folderConflicts[relativePath].size() > 1)
+		{
+			foreach (const QString& conflictingFolder, folderConflicts[relativePath])
+			{
+				if (conflictingFolder == baseFolder)
+					continue;
+
+				QModelIndex conflictingIndex = getIndexForFolder(conflictingFolder);
+				if (!conflictingIndex.isValid())
+				{
+					qDebug() << "Warning: Could not find index for conflict for '" + conflictingFolder + "'";
+					continue;
+				}
+
+				while (conflictingIndex.isValid())
+				{
+					currentConflicts.push_back(conflictingIndex.sibling(conflictingIndex.row(), 0));
+					this->dataChanged(conflictingIndex.sibling(conflictingIndex.row(), 0), conflictingIndex.sibling(conflictingIndex.row(), TreeModItem::COLUMN_COUNT), QVector<int>() << Qt::TextColorRole);
+					QModelIndex p = conflictingIndex.parent();
+					conflictingIndex = p.sibling(p.row(), conflictingIndex.column());
+				}
+			}
+		}
 	}
 }

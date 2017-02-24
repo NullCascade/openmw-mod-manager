@@ -24,6 +24,7 @@ public:
 	// Row/column/index
 	QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
 	QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
+	QModelIndex getIndexForFolder(const QString& folder);
 
 	int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
 	int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
@@ -47,14 +48,11 @@ public:
 	Qt::DropActions supportedDragActions() const Q_DECL_OVERRIDE;
 	Qt::DropActions supportedDropActions() const Q_DECL_OVERRIDE;
 
-	// Conflicts.
-	void addConflictsForIndex(const QModelIndex& index, const QString& dir);
-
 public slots:
 	void updateConflictSelection(const QItemSelection& selected, const QItemSelection& deselected);
 
 private:
-	void addMods(const QJsonArray& modsArray, TreeModItem* parent);
+	void addMods(const QJsonArray& modsArray, QModelIndex& parent);
 	void loadDataFromJson();
 	void saveDataToJson();
 	void saveDataToConfig();
@@ -69,6 +67,7 @@ private:
 
 	QItemSelection currentSelection;
 	QModelIndexList currentConflicts;
+	QMap<QString,QStringList> folderConflicts;
 };
 
 #endif // TREEMODMODEL_H
