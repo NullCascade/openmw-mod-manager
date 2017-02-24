@@ -17,9 +17,12 @@ WinMain::WinMain(QWidget *parent) :
 	openMWConfig = new OpenMWConfigInterface("C:\\Users\\Michael\\Documents\\My Games\\OpenMW\\openmw.cfg");
 
 	// Set up mod view.
-	ui->tvMain->setModel(new TreeModModel(settings, openMWConfig));
+	TreeModModel* model = new TreeModModel(settings, openMWConfig);
+	ui->tvMain->setModel(model);
 	ui->tvMain->header()->setContextMenuPolicy(Qt::CustomContextMenu);
 	ui->tvMain->header()->setSectionsMovable(false);
+	connect(ui->tvMain->selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+			model, SLOT(updateConflictSelection(const QItemSelection&, const QItemSelection&)));
 
 	// Resize columns to fit.
 	for (int column = 0; column < ui->tvMain->header()->count(); column++)
@@ -70,11 +73,33 @@ void WinMain::actDeleteData()
 
 void WinMain::actContextMenuDataTree(const QPoint& pos)
 {
+	QModelIndex index = ui->tvMain->selectionModel()->currentIndex();
+
 	QMenu menu(this);
+
 	menu.addAction(ui->actionAddData);
 	menu.addAction(ui->actionDeleteData);
-//	menu.addAction(ui->actionAddChildData);
+
+	menu.addSeparator();
+	QAction* actOpenFolder = menu.addAction("Open folder", this, SLOT(actContextMenuDataTreeOpenFolder()));
+	QDir folder = index.sibling(index.row(), TreeModItem::COLUMN_FOLDER).data().toString();
+	if (!folder.exists())
+		actOpenFolder->setDisabled(true);
+
 	menu.exec(ui->tvMain->viewport()->mapToGlobal(pos));
+}
+
+void WinMain::actContextMenuDataTreeOpenFolder()
+{
+	QModelIndex index = ui->tvMain->selectionModel()->currentIndex();
+	QDir folder = index.sibling(index.row(), TreeModItem::COLUMN_FOLDER).data().toString();
+	if (!folder.exists())
+	{
+		qDebug() << "Warning: Folder '" << folder.absolutePath() << "' does not exist.";
+		return;
+	}
+
+	QDesktopServices::openUrl(QUrl::fromLocalFile(folder.absolutePath()));
 }
 
 void WinMain::actContextMenuDataTreeHeader(const QPoint& pos)
@@ -150,8 +175,7 @@ void WinMain::addNewData(QAbstractItemModel* model, const QModelIndex& parent, i
 	// Get path as string.
 	QString path = target.absoluteFilePath();
 
-	// Make sure we aren't adding a duplicate.
-	//! TODO
+	//! Make sure we aren't adding a duplicate.
 
 	// Add to model.
 	if (!model->insertRow(position, parent))

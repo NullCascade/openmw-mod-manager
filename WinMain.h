@@ -1,6 +1,8 @@
 #ifndef WINMAIN_H
 #define WINMAIN_H
 
+#include <QDebug>
+#include <QDesktopServices>
 #include <QMainWindow>
 #include <QContextMenuEvent>
 #include <QDirIterator>
@@ -31,6 +33,7 @@ public slots:
 	void actAddChildData();
 	void actDeleteData();
 	void actContextMenuDataTree(const QPoint& pos);
+	void actContextMenuDataTreeOpenFolder();
 	void actContextMenuDataTreeHeader(const QPoint& pos);
 
 	void actContextMenuDataTreeHeaderTriggered(QAction* action);

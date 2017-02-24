@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QAbstractItemModel>
 #include <QJsonDocument>
+#include <QItemSelection>
 
 #include "OpenMWConfigInterface.h"
 #include "SettingsInterface.h"
@@ -11,6 +12,7 @@
 
 class TreeModModel : public QAbstractItemModel
 {
+	Q_OBJECT
 public:
 	TreeModModel(SettingsInterface* settingsInterface, OpenMWConfigInterface* configInterface, QObject *parent = 0);
 	~TreeModModel();
@@ -45,6 +47,12 @@ public:
 	Qt::DropActions supportedDragActions() const Q_DECL_OVERRIDE;
 	Qt::DropActions supportedDropActions() const Q_DECL_OVERRIDE;
 
+	// Conflicts.
+	void addConflictsForIndex(const QModelIndex& index, const QString& dir);
+
+public slots:
+	void updateConflictSelection(const QItemSelection& selected, const QItemSelection& deselected);
+
 private:
 	void addMods(const QJsonArray& modsArray, TreeModItem* parent);
 	void loadDataFromJson();
@@ -58,6 +66,9 @@ private:
 
 	SettingsInterface* settings;
 	OpenMWConfigInterface* config;
+
+	QItemSelection currentSelection;
+	QModelIndexList currentConflicts;
 };
 
 #endif // TREEMODMODEL_H

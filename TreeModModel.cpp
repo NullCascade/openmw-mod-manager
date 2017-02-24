@@ -33,6 +33,16 @@ QVariant TreeModModel::data(const QModelIndex &index, int role) const
 	if (!index.isValid())
 		return QVariant();
 
+	if (role == Qt::TextColorRole)
+	{
+		foreach (const QModelIndex& conflict, currentConflicts)
+		{
+			if (conflict == index.sibling(index.row(),0))
+				return QVariant(QColor(255, 0, 0));
+		}
+
+	}
+
 	if (role == Qt::DisplayRole || role == Qt::EditRole)
 	{
 		if (index.column() != TreeModItem::COLUMN_ENABLED)
@@ -353,4 +363,110 @@ Qt::DropActions TreeModModel::supportedDragActions() const
 Qt::DropActions TreeModModel::supportedDropActions() const
 {
 	return Qt::MoveAction;
+}
+
+void TreeModModel::addConflictsForIndex(const QModelIndex& index, const QString& dir)
+{
+	if (!index.isValid())
+	{
+		qDebug() << "Invalid conflict parameters.";
+		return;
+	}
+
+	if (index.column() != TreeModItem::COLUMN_FOLDER)
+	{
+		qDebug() << "Invalid conflict column.";
+		return;
+	}
+
+	// Ignore conflict if this is selected or is a child of the selected.
+	if (!currentSelection.empty())
+	{
+		QModelIndex selectedIndex = currentSelection.indexes().at(TreeModItem::COLUMN_FOLDER);
+		if (selectedIndex == index || selectedIndex == index.parent().sibling(index.parent().row(), TreeModItem::COLUMN_FOLDER))
+			return;
+	}
+
+	// Children highlighting is handled differently.
+	if (this->rowCount(index) > 0)
+	{
+		int previousConflictCount = currentConflicts.size();
+		for (int r = 0; r < this->rowCount(index); r++)
+		{
+			//! TODO: Why is `index.child(r)` returning an invalid QModelIndex? Figure it out. Working around here.
+			addConflictsForIndex(createIndex(r, TreeModItem::COLUMN_FOLDER, getItem(index)->child(r)), dir);
+		}
+
+		if (currentConflicts.size() > previousConflictCount)
+		{
+			currentConflicts.push_back(index.sibling(index.row(), 0));
+			this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT));
+		}
+		return;
+	}
+
+	// If we don't have children, manually check the directory.
+	QString thisDir = index.data().toString();
+	if (!QDir(thisDir).exists())
+	{
+		qDebug() << "Warning: Folder '" + thisDir + "' does not exist.";
+		return;
+	}
+
+	QDirIterator it(thisDir, QStringList(), QDir::Files, QDirIterator::Subdirectories);
+	while (it.hasNext())
+	{
+		QString foundPath = it.next();
+		QFileInfo relativeFile = dir + "/" + foundPath.right(foundPath.length() - thisDir.length() - 1);
+		if (relativeFile.exists())
+		{
+			currentConflicts.push_back(index.sibling(index.row(), 0));
+			this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT));
+			break;
+		}
+	}
+}
+
+//! TODO: For the love of God, optimize this.
+void TreeModModel::updateConflictSelection(const QItemSelection& selected, const QItemSelection& deselected)
+{
+	Q_UNUSED(deselected);
+
+	if (selected == currentSelection)
+		return;
+
+	currentSelection = selected;
+
+	// Clear conflicts.
+	QModelIndexList selectionCopy = currentConflicts;
+	foreach(const QModelIndex& index, selectionCopy)
+	{
+		currentConflicts.removeAt(currentConflicts.indexOf(index));
+		this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT));
+	}
+	currentConflicts.clear();
+
+	QString baseFolder;
+	QModelIndex thisIndex;
+	foreach(const QModelIndex& index, selected.indexes())
+	{
+		if (index.column() == TreeModItem::COLUMN_FOLDER)
+		{
+			thisIndex = index;
+			baseFolder = index.data().toString();
+			break;
+		}
+	}
+
+	if (baseFolder.isEmpty())
+	{
+		qDebug("Warning: Could not locate folder for selection.");
+		return;
+	}
+
+	// Slow and dirty: search all sub files of other indexes and highlight conflicts.
+	for (int r = 0; r < this->rowCount(); r++)
+	{
+		addConflictsForIndex(this->index(r, TreeModItem::COLUMN_FOLDER), baseFolder);
+	}
 }
