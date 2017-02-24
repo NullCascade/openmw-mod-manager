@@ -2,6 +2,8 @@
 
 This project aims to provide a GUI-driven tool for managing and detecting conflicts with mods for the open source re-implementation of *The Elder Scrolls III: Morrowind*, [OpenMW](https://openmw.org).
 
+![screenshot](https://i.imgur.com/rpcfj9e.png)
+
 Key features include:
 
 * A simple user-interface that displays data repositories scattered across various locations.
