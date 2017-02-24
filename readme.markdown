@@ -8,10 +8,11 @@ Key features include:
 * The ability to disable/enable data repositories with a quick click.
 * The ability to quickly add data repositories through the native file system.
 * Recognition of mod sub-components for complicated data.
+* Conflict detection, to show how the order of data repositories matters.
 
 Planned features include:
 
-* Conflict detection and reporting, to show how the order of data repositories matters.
+* Detailed conflict reporting.
 * Enabling/disabling content without using the OpenMW launcher.
 * Enabling/disabling BSAs without using the OpenMW launcher.
 * Updating conflict detection to compare to BSAs.
@@ -21,4 +22,4 @@ This tool was inspired by [Wrye Mash](http://www.uesp.net/wiki/Tes3Mod:Wrye_Mash
 
 ## Source
 
-This tool suffers from major spaghetti code, as it was written as an introduction to Qt.
+This tool suffers from major spaghetti code, as it was written as an introduction to Qt. I'm sorry.

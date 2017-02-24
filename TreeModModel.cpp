@@ -178,6 +178,9 @@ bool TreeModModel::removeRows(int position, int rows, const QModelIndex &parent)
 	// Redo indexing
 	recalculateIndexes(parentItem, position);
 
+	// Clear conflicts; another selection is going to come right after.
+	currentConflicts.clear();
+
 	return success;
 }
 
@@ -434,17 +437,17 @@ void TreeModModel::updateConflictSelection(const QItemSelection& selected, const
 
 	if (selected == currentSelection)
 		return;
-
 	currentSelection = selected;
 
 	// Clear conflicts.
 	QModelIndexList selectionCopy = currentConflicts;
-	foreach(const QModelIndex& index, selectionCopy)
-	{
-		currentConflicts.removeAt(currentConflicts.indexOf(index));
-		this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT));
-	}
 	currentConflicts.clear();
+	foreach(const QModelIndex& index, selectionCopy)
+		this->dataChanged(index.sibling(index.row(), 0), index.sibling(index.row(), TreeModItem::COLUMN_COUNT));
+
+	// We don't care what happens if the selection is empty.
+	if (selected.empty())
+		return;
 
 	QString baseFolder;
 	QModelIndex thisIndex;
