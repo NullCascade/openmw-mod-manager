@@ -12,9 +12,12 @@ WinMain::WinMain(QWidget *parent) :
 {
 	ui->setupUi(this);
 
+	// Get OpenMW config folder.
+	QString conficFolder = QStandardPaths::locate(QStandardPaths::DocumentsLocation, "My Games/OpenMW", QStandardPaths::LocateDirectory);
+
 	// Load configs.
-	settings = new SettingsInterface("C:\\Users\\Michael\\Desktop\\mods.json");
-	openMWConfig = new OpenMWConfigInterface("C:\\Users\\Michael\\Documents\\My Games\\OpenMW\\openmw.cfg");
+	settings = new SettingsInterface(conficFolder + "/mods.json");
+	openMWConfig = new OpenMWConfigInterface(conficFolder + "/openmw.cfg");
 
 	// Set up mod view.
 	TreeModModel* model = new TreeModModel(settings, openMWConfig);
