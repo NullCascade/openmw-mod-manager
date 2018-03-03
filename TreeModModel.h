@@ -52,7 +52,7 @@ public slots:
 	void updateConflictSelection(const QItemSelection& selected, const QItemSelection& deselected);
 
 private:
-	void addMods(const QJsonArray& modsArray, QModelIndex& parent);
+	void addMods(const QJsonArray& modsArray, const QModelIndex& parent);
 	void loadDataFromJson();
 	void saveDataToJson();
 	void saveDataToConfig();

@@ -35,7 +35,7 @@ void SettingsInterface::save()
 
 QVariant SettingsInterface::getSetting(const QString& key)
 {
-	return json.object()["settings"].toObject()[key];
+	return (QVariant) json.object()["settings"].toObject()[key];
 }
 
 void SettingsInterface::setSetting(const QString& key, const QString& value)
