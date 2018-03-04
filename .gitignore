@@ -1,7 +1,7 @@
 
 #ignore thumbnails created by windows
 Thumbs.db
-#Ignore files build by Visual Studio
+#Ignore files built by Visual Studio
 *.obj
 *.exe
 *.pdb
@@ -27,3 +27,11 @@ obj/
 [Rr]elease*/
 _ReSharper*/
 [Tt]est[Rr]esult*
+#Ignore files built by qmake and make
+*.o
+moc_*
+ui_*
+Makefile
+.qmake.stash
+*.swp
+*.app

@@ -11,13 +11,20 @@ WinMain::WinMain(QWidget *parent) :
 	ui(new Ui::WinMain)
 {
 	ui->setupUi(this);
-
+	
 	// Get OpenMW config folder.
-	QString conficFolder = QStandardPaths::locate(QStandardPaths::DocumentsLocation, "My Games/OpenMW", QStandardPaths::LocateDirectory);
+	QString configFolder;
+	#if defined(Q_OS_MACOS)
+		configFolder = QStandardPaths::locate(QStandardPaths::ConfigLocation, "openmw", QStandardPaths::LocateDirectory);
+	#elif defined(Q_OS_WIN)
+		configFolder = QStandardPaths::locate(QStandardPaths::DocumentsLocation, "My Games/OpenMW", QStandardPaths::LocateDirectory);
+	#else
+		#error Unsupported OS
+	#endif
 
 	// Load configs.
-	settings = new SettingsInterface(conficFolder + "/mods.json");
-	openMWConfig = new OpenMWConfigInterface(conficFolder + "/openmw.cfg");
+	settings = new SettingsInterface(configFolder + "/mods.json");
+	openMWConfig = new OpenMWConfigInterface(configFolder + "/openmw.cfg");
 
 	// Set up mod view.
 	TreeModModel* model = new TreeModModel(settings, openMWConfig);

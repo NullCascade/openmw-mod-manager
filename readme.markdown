@@ -25,3 +25,5 @@ This tool was inspired by [Wrye Mash](http://www.uesp.net/wiki/Tes3Mod:Wrye_Mash
 ## Source
 
 This tool suffers from major spaghetti code, as it was written as an introduction to Qt. I'm sorry.
+
+To compile run `qmake` followed by `make`.

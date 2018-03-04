@@ -283,7 +283,7 @@ bool TreeModModel::setHeaderData(int section, Qt::Orientation orientation, const
 	return result;
 }
 
-void TreeModModel::addMods(const QJsonArray& modsArray, QModelIndex& parent)
+void TreeModModel::addMods(const QJsonArray& modsArray, const QModelIndex& parent)
 {
 	foreach( QJsonValue mod, modsArray )
 	{
