@@ -45,6 +45,8 @@ protected:
 	void dropEvent(QDropEvent* event) Q_DECL_OVERRIDE;
 
 private:
+	/** Open a file-chooser to locate config folder manually. */
+	QString locateConfigFolder();
 	void addNewData(QAbstractItemModel* model, const QModelIndex& parent, int position, const QFileInfo& target);
 
 	Ui::WinMain *ui;

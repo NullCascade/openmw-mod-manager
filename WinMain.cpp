@@ -5,6 +5,7 @@
 #include <QStandardItemModel>
 #include <QCheckBox>
 #include <QFileDialog>
+#include <QMessageBox>
 
 WinMain::WinMain(QWidget *parent) :
 	QMainWindow(parent),
@@ -18,9 +19,24 @@ WinMain::WinMain(QWidget *parent) :
 		configFolder = QStandardPaths::locate(QStandardPaths::ConfigLocation, "openmw", QStandardPaths::LocateDirectory);
 	#elif defined(Q_OS_WIN)
 		configFolder = QStandardPaths::locate(QStandardPaths::DocumentsLocation, "My Games/OpenMW", QStandardPaths::LocateDirectory);
-	#else
-		#error Unsupported OS
+	#elif defined(Q_OS_LINUX)
+		// Default flatpak location
+		configFolder = QStandardPaths::locate(QStandardPaths::HomeLocation, ".var/app/org.openmw.OpenMW/config/openmw/", QStandardPaths::LocateDirectory);
 	#endif
+
+	// If not found automatically, ask where it is...
+	if(configFolder.isEmpty())
+	{
+		QMessageBox mbox;
+		mbox.setText("Couldn't locate your OpenMW config folder. Please locate the directory containing the files:\n\n  - openmw.cfg\n  - mods.json");
+		mbox.setModal(true);
+		mbox.setStandardButtons(QMessageBox::Open);
+		mbox.setButtonText(0, "Locate...");
+		mbox.setIcon(QMessageBox::Icon::Question);
+		mbox.exec();
+
+		configFolder = locateConfigFolder();
+	}
 
 	// Load configs.
 	settings = new SettingsInterface(configFolder + "/mods.json");
@@ -177,6 +193,42 @@ void WinMain::dropEvent(QDropEvent* event)
 
 		uri = stream.readLine();
 	}
+}
+
+QString WinMain::locateConfigFolder()
+{
+	QString configFolder = QFileDialog::getExistingDirectory(this, "Locate OpenMW config folder...", QString(), 0);
+
+	// Cancelled...
+	if(configFolder.isEmpty())
+	{
+		exit(0);
+	}
+
+	QDir configDir(configFolder);
+
+	bool foundConfig = QFile(configDir.filePath("openmw.cfg")).exists();
+	bool foundJson = QFile(configDir.filePath("mods.json")).exists();
+
+	if(foundConfig && foundJson)
+	{
+		return configFolder;
+	}
+
+	QMessageBox mbox;
+	mbox.setText("Directory must contain the following files:\n\n - openmw.cfg\n - mods.json");
+	mbox.setModal(true);
+	mbox.setStandardButtons(QMessageBox::Cancel | QMessageBox::Open);
+	mbox.setDefaultButton(QMessageBox::Open);
+	mbox.setIcon(QMessageBox::Icon::Warning);
+	int result = mbox.exec();
+
+	if(result == QMessageBox::Cancel)
+	{
+		exit(0);
+	}
+
+	return locateConfigFolder();
 }
 
 
