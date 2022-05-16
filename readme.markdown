@@ -1,3 +1,5 @@
+THIS PROJECT IS NOT MAINTAINED. Use Mod Organizer 2 and the OpenMW export plugin for it instead.
+
 # OpenMW Mod Manager
 
 This project aims to provide a GUI-driven tool for managing and detecting conflicts with mods for the open source re-implementation of *The Elder Scrolls III: Morrowind*, [OpenMW](https://openmw.org).
